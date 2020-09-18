@@ -3,12 +3,17 @@
 # Configuration script for Raspberry Pi.
 # Only to be used within the EHU course "Robótica, Sensores y Actuadores"
 #
+# To download and run this script, execute the following command in a terminal:
+# bash -c "$(curl -fsS https://raw.githubusercontent.com/egokituz/robopi_config/master/robopi_config.sh)"
+#
+# Or if you already have it downloaded, execute it 
+#
 # Author: Xabier Gardeazabal
 # email:  xabier.gardeazabal at ehu.eus
 #
 # Last updated on 2020/09/17
 #
-# Based on: https://gordonlesti.com/change-default-users-on-raspberry-pi/
+# Based on: https://ragingtiger.github.io/2018/06/19/rpi-init-setup
 
 
 ########################
@@ -54,6 +59,10 @@ setup_rpi_update(){
   # update
   sudo apt update
   sudo apt upgrade
+}
+
+setup_su_password(){
+  sudo passwd
 }
 
 setup_delete_user_pi(){
@@ -112,7 +121,7 @@ setup_network_files(){
   ip_address=$(get_response '*' true)
 
   # create here doc and append to file
-  sudo cat <<EOF | sudo tee -a /etc/dhcpcd.conf
+  sudo cat <<EOF | sudo tee /etc/dhcpcd.conf
 # Configuracion generada automaticamente por https://github.com/egokituz/robopi_config/robopi_config.sh
 interface eth0
 static ip_address=ip_address/24 ## MODIFICAR 192.168.1.1XY/24
@@ -125,7 +134,7 @@ static routers=192.168.1.1
 static domain_name_servers=192.168.1.1 8.8.8.8 4.4.4.4 
 EOF
 
-sudo cat <<EOF | sudo tee -a /etc/network/interfaces
+  sudo cat <<EOF | sudo tee /etc/network/interfaces
 # Configuracion generada automaticamente por https://github.com/egokituz/robopi_config/robopi_config.sh
 
 # interfaces(5) file used by ifup(8) and ifdown(8)
@@ -213,10 +222,32 @@ setup_sshkey(){
   exit
 }
 
+setup_ssh_enable(){
+  sudo systemctl enable ssh
+  sudo systemctl start ssh
+  
+  sudo cat <<EOF | sudo tee -a /etc/ssh/sshd_config
+PermitRootLogin yes
+EOF
+}
+
+setup_wiringpi(){
+	sudo su<<EOF
+cd /root
+git clone https://github.com/WiringPi/WiringPi
+./build
+exit # exit super user session
+EOF
+}
+
 main(){
   # update
   prompt "Would you like to update? (recommended) [Y/n]: "
   get_response setup_rpi_update 'Y' false
+  
+  # Change sudo password
+  prompt "Would you like to set or change super user password? (recommended: toor) [Y/n]: "
+  get_response setup_su_password 'Y' false
 
   # delete 'pi' user
   prompt "Would you like to delete 'pi' user (recommended)? [Y\n]: "
@@ -239,10 +270,18 @@ main(){
   prompt "Would you like to setup a new hostname? (eg: robopi01) [Y/n]: "
   get_response setup_hostname 'Y' false
 
+  # WiringPi
+  prompt "Install WiringPi? [Y/n]: "
+  get_response setup_wiringpi 'Y' false
+
+  # enable ssh
+  prompt "Would you like to enable SSH (also for root)? [Y/n]: "
+  get_response setup_ssh_enable 'Y' false
+
   # setup sshkey
   prompt "Would you like to setup an SSH key now? [Y/n]: "
   get_response setup_sshkey 'Y' false
-
+  
   # restart
   prompt "Restart RPi for changes to take effect (hostname, user)? [Y/n]: "
   get_response fresh_restart 'Y' false

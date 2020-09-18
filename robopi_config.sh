@@ -123,15 +123,27 @@ setup_network_files(){
   # create here doc and append to file
   sudo cat <<EOF | sudo tee /etc/dhcpcd.conf
 # Configuracion generada automaticamente por https://github.com/egokituz/robopi_config/robopi_config.sh
+#Inform the DHCP server of our hostname for DDNS
+hostname
+# Use the hardware address of the interface for the Client ID
+clientid
+
+
 interface eth0
-static ip_address=ip_address/24 ## MODIFICAR 192.168.1.1XY/24
+
+# MODIFICAR 192.168.1.1XY/24
+static ip_address=$ip_address/24
 static routers=192.168.1.1
-static domain_name_servers=192.168.1.1
+static domain_name_servers=192.168.1.1 8.8.8.8 4.4.4.4
+inform $ip_address
 
 interface wlan0
-static ip_address=ip_address/24 ## MODIFICAR 192.168.1.1XY/24
+
+## MODIFICAR 192.168.1.1XY/24
+static ip_address=$ip_address/24
 static routers=192.168.1.1
-static domain_name_servers=192.168.1.1 8.8.8.8 4.4.4.4 
+static domain_name_servers=192.168.1.1 8.8.8.8 4.4.4.4
+inform $ip_address
 EOF
 
   sudo cat <<EOF | sudo tee /etc/network/interfaces
@@ -146,7 +158,7 @@ EOF
 source-directory /etc/network/interfaces.d
 EOF
   
-  sudo cat <<EOF | sudo tee -a /etc/wpa_supplicant/wpa_supplicant.conf
+  sudo cat <<EOF | sudo tee /etc/wpa_supplicant/wpa_supplicant.conf
 # Configuracion generada automaticamente por https://github.com/egokituz/robopi_config/robopi_config.sh
 
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
@@ -168,6 +180,7 @@ key_mgmt=WPA-PSK
 pairwise=CCMP
 auth_alg=OPEN
 priority=2
+}
 EOF
 
 }

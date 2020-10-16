@@ -123,11 +123,31 @@ setup_network_files(){
   # create here doc and append to file
   sudo cat <<EOF | sudo tee /etc/dhcpcd.conf
 # Configuracion generada automaticamente por https://github.com/egokituz/robopi_config/robopi_config.sh
+# See dhcpcd.conf(5) for details.
+
 #Inform the DHCP server of our hostname for DDNS
 hostname
+
 # Use the hardware address of the interface for the Client ID
 clientid
 
+# Persist interface configuration when dhcpcd exits.
+persistent
+
+# Rapid commit support. Safe to enable by default because it requires the equivalent option set on the server to actually work.
+option rapid_commit
+
+# A list of options to request from the DHCP server.
+option domain_name_servers, domain_name, domain_search, host_name
+option classless_static_routes
+# Respect the network MTU. This is applied to DHCP routes.
+option interface_mtu
+
+# A ServerID is required by RFC2131.
+require dhcp_server_identifier
+
+# Generate Stable Private IPv6 Addresses based from the DUID
+slaac private
 
 interface eth0
 
@@ -175,10 +195,7 @@ priority=1
 network={
 ssid="RaspberryPiLab"
 psk="robopi2015"
-proto=RSN
 key_mgmt=WPA-PSK
-pairwise=CCMP
-auth_alg=OPEN
 priority=2
 }
 EOF
